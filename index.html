@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧出行 - 老年版高德地图练习</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/animate.css@4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.10/css/weather-icons.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- 顶部导航栏 -->
+        <header class="header">
+            <div class="header-left">
+                <h1><i class="fas fa-map-marked-alt"></i> 智慧出行</h1>
+                <span class="subtitle">老年友好版导航</span>
+            </div>
+            <div class="header-right">
+                <div class="weather-info">
+                    <i class="wi wi-day-sunny"></i>
+                    <span id="weatherText">22°C 晴</span>
+                </div>
+                <div class="time-info">
+                    <i class="fas fa-clock"></i>
+                    <span id="currentTime">12:00</span>
+                </div>
+                <button class="help-btn" onclick="showHelp()">
+                    <i class="fas fa-question-circle"></i> 使用帮助
+                </button>
+                <button class="voice-btn" id="voiceControlBtn" onclick="toggleVoiceControl()">
+                    <i class="fas fa-microphone"></i> 语音
+                </button>
+            </div>
+        </header>
+
+        <!-- 快捷功能区域 -->
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="quickSearch('瑞金医院')">
+                <i class="fas fa-hospital"></i>
+                <span>医院</span>
+            </button>
+            <button class="quick-btn" onclick="quickSearch('南京路步行街')">
+                <i class="fas fa-shopping-bag"></i>
+                <span>购物</span>
+            </button>
+            <button class="quick-btn" onclick="quickSearch('外滩')">
+                <i class="fas fa-tree"></i>
+                <span>公园</span>
+            </button>
+            <button class="quick-btn" onclick="quickSearch('上海博物馆')">
+                <i class="fas fa-university"></i>
+                <span>文化</span>
+            </button>
+            <button class="quick-btn emergency" onclick="showEmergency()">
+                <i class="fas fa-phone-alt"></i>
+                <span>紧急</span>
+            </button>
+        </div>
+
+        <!-- 搜索区域 -->
+        <div class="search-section">
+            <div class="search-box">
+                <div class="location-display">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>中国福利会少年宫</span>
+                </div>
+                <input type="text" id="endLocation" placeholder="您要去哪里？支持语音输入" list="popularDestinations">
+                <datalist id="popularDestinations">
+                    <option value="中国福利会少年宫">
+                    <option value="少年宫">
+                    <option value="瑞金医院">
+                    <option value="华山医院">
+                    <option value="中山医院">
+                    <option value="南京路步行街">
+                    <option value="南京路">
+                    <option value="徐家汇商圈">
+                    <option value="静安寺商圈">
+                    <option value="外滩">
+                    <option value="上海外滩">
+                    <option value="豫园">
+                    <option value="上海博物馆">
+                    <option value="上海科技馆">
+                    <option value="上海站">
+                    <option value="上海火车站">
+                    <option value="上海虹桥站">
+                    <option value="虹桥机场">
+                    <option value="浦东机场">
+                </datalist>
+                <div class="search-buttons">
+                    <button class="search-btn" onclick="searchRoute()">
+                        <i class="fas fa-search"></i> 搜索路线
+                    </button>
+                    <button class="voice-input-btn" id="voiceInputBtn" onclick="startVoiceInput()">
+                        <i class="fas fa-microphone"></i> 语音
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 地图区域 -->
+        <div class="map-section">
+            <div id="map" class="map-container">
+                <div id="mapLoading" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 1000;">
+                    <div style="font-size: 24px; margin-bottom: 10px;">地图加载中...</div>
+                    <div>正在加载上海市地图</div>
+                    <div style="font-size: 14px; color: #666; margin-top: 10px;">
+                        如果长时间未显示，请检查网络连接
+                    </div>
+                    <button onclick="retryLoadMap()" style="margin-top: 10px; padding: 8px 16px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">重新加载地图</button>
+                </div>
+            </div>
+            <div class="map-controls">
+                <button onclick="zoomIn()" title="放大">+</button>
+                <button onclick="zoomOut()" title="缩小">-</button>
+                <button onclick="locateUser()" title="回到我的位置">定位</button>
+            </div>
+        </div>
+
+        <!-- 路线选择区域 -->
+        <div class="route-section" id="routeSection" style="display: none;">
+            <h3>为您找到以下路线：</h3>
+            <div class="route-options" id="routeOptions">
+                <!-- 路线选项将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 结果提示区域 -->
+        <div class="result-section" id="resultSection" style="display: none;">
+            <div class="result-card">
+                <h4>路线详情</h4>
+                <div id="routeDetails"></div>
+                <button class="start-journey-btn" onclick="startJourney()">开始行程</button>
+            </div>
+        </div>
+
+        <!-- 帮助弹窗 -->
+        <div class="modal" id="helpModal">
+            <div class="modal-content">
+                <span class="close" onclick="closeHelp()">&times;</span>
+                <h3>使用帮助</h3>
+                <div class="help-content">
+                    <h4>游戏目标：</h4>
+                    <p>帮助您练习使用地图应用，选择最适合的出行路线。</p>
+                    
+                    <h4>如何使用：</h4>
+                    <ol>
+                        <li>在搜索框输入您要去的地点</li>
+                        <li>查看系统为您推荐的路线</li>
+                        <li>选择最适合您的出行方式</li>
+                        <li>如果选择太便宜的慢路线，系统会提醒您</li>
+                    </ol>
+                    
+                    <h4>出行方式说明：</h4>
+                    <ul>
+                        <li><strong>公交：</strong> 最省钱，但需要换乘，时间较长</li>
+                        <li><strong>地铁：</strong> 快速准时，价格适中</li>
+                        <li><strong>打车：</strong> 最方便快捷，但费用较高</li>
+                        <li><strong>步行：</strong> 适合近距离，免费且锻炼身体</li>
+                        <li><strong>骑行：</strong> 适合中短距离，经济实惠</li>
+                    </ul>
+                    
+                    <h4>老年人专属提醒：</h4>
+                    <ul>
+                        <li>选择时间过长路线时，系统会提醒您选择更快的</li>
+                        <li>近距离会建议步行或骑行，既省钱又健康</li>
+                        <li>打车时会提供安全提醒，让您出行更放心</li>
+                        <li>复杂换乘路线会提供详细指导</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提示弹窗 -->
+        <div class="modal" id="tipModal">
+            <div class="modal-content">
+                <span class="close" onclick="closeTip()">&times;</span>
+                <h3>温馨提示</h3>
+                <div id="tipContent"></div>
+                <button class="ok-btn" onclick="closeTip()">知道了</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 外部类库 -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.4.0/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.3/howler.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
